@@ -1,0 +1,18 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+lib/Hook/Filter/Rule.pm
+lib/Hook/Filter/Hook.pm
+lib/Hook/Filter/Plugins/Location.pm
+lib/Hook/Filter.pm
+t/01_test_compile.t
+t/02_test_import_params.t
+t/03_test_hook_filter_rule.t
+t/04_test_hook.t
+t/05_test_rule_file.t
+t/06_test_log_dispatch.t
+t/10_test_is_sub.t
+t/11_test_from_sub.t
+t/12_test_from_pkg.t
+META.yml                                 Module meta-data (added by MakeMaker)
