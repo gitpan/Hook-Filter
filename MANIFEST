@@ -15,4 +15,6 @@ t/06_test_log_dispatch.t
 t/10_test_is_sub.t
 t/11_test_from_sub.t
 t/12_test_from_pkg.t
+t/pod.t
+t/pod-coverage.t
 META.yml                                 Module meta-data (added by MakeMaker)

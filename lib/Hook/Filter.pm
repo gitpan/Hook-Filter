@@ -2,7 +2,7 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.1 2006/01/27 06:35:47 erwan Exp $
+#   $Id: Filter.pm,v 1.2 2006/05/23 07:12:48 erwan Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
@@ -22,7 +22,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 #----------------------------------------------------------------
 #

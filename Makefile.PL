@@ -7,7 +7,7 @@ WriteMakefile(
     VERSION_FROM      => 'lib/Hook/Filter.pm', # finds $VERSION
     PREREQ_PM         => {
 	Module::Pluggable => 2.2,
-	File::Spec => 3.11,
+	File::Spec => 0.86,
     },
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/Hook/Filter.pm', # retrieve abstract from module

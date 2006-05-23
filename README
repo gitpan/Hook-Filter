@@ -1,5 +1,5 @@
-Hook::Filter version 0.01
-=========================
+Hook::Filter
+============
 
 Hook::Filter is a runtime firewall for subroutine calls.
 
