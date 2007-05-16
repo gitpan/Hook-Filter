@@ -1,12 +1,8 @@
-#!/usr/local/bin/perl
 #################################################################
 #
-#   $Id: 06_test_log_dispatch.t,v 1.1 2006/01/27 06:56:16 erwan Exp $
+#   $Id: 06_test_log_dispatch.t,v 1.3 2007/05/16 15:44:21 erwan_lemonnier Exp $
 #
-#   @author       erwan lemonnier
-#   @description  test filtering Log::Dispatch with Hook::Filter
-#   @system       pluto
-#   @function     base
+#   test filtering Log::Dispatch with Hook::Filter
 #
 
 package MyTest1;
@@ -39,6 +35,7 @@ package main;
 
 use Test::More;
 use Data::Dumper;
+use lib "../lib/";
 
 my $rule_file;
 
@@ -56,8 +53,8 @@ BEGIN {
 
     `rm $rule_file` if (-e $rule_file);
     `touch $rule_file`;
-    `echo "!from_pkg('MyTest1')" >> $rule_file`;
-    
+    `echo "from !~ /^MyTest1/" >> $rule_file`;
+
     use_ok('Hook::Filter', hook => ['Log::Dispatch::log','Log::Dispatch::log_to'], rules => $rule_file);
 }
 

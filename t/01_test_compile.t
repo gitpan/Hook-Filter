@@ -1,12 +1,8 @@
-#!/usr/local/bin/perl
 #################################################################
 #
-#   $Id: 01_test_compile.t,v 1.2 2006/04/26 21:49:40 erwan Exp $
+#   $Id: 01_test_compile.t,v 1.5 2007/05/16 15:44:21 erwan_lemonnier Exp $
 #
-#   @author       erwan lemonnier
-#   @description  test that all modules under Hook::Filter do compile
-#   @system       pluto
-#   @function     base
+#   test that all modules compile
 #
 
 use strict;
@@ -15,12 +11,14 @@ use Data::Dumper;
 use Test::More;
 use lib "../lib/";
 
-BEGIN { 
+BEGIN {
     eval "use Module::Pluggable"; plan skip_all => "Module::Pluggable required for testing Hook::Filter" if $@;
 
-    plan tests => 3;
+    plan tests => 5;
 
+    use_ok('Hook::Filter::Plugins::Library');
     use_ok('Hook::Filter::Rule');
-    use_ok('Hook::Filter::Hook');
+    use_ok('Hook::Filter::RulePool');
+    use_ok('Hook::Filter::Hooker');
     use_ok('Hook::Filter','hook',[]);
 };

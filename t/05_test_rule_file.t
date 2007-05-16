@@ -1,12 +1,8 @@
-#!/usr/local/bin/perl
 #################################################################
 #
-#   $Id: 05_test_rule_file.t,v 1.1 2006/01/27 06:56:16 erwan Exp $
+#   $Id: 05_test_rule_file.t,v 1.4 2007/05/16 15:44:21 erwan_lemonnier Exp $
 #
-#   @author       erwan lemonnier
-#   @description  test using a rule file with Hook::Filter
-#   @system       pluto
-#   @function     base
+#   test using a rule file with Hook::Filter
 #
 
 #
@@ -19,6 +15,7 @@ package MyTest;
 
 use strict;
 use warnings;
+use lib "../lib/";
 use Hook::Filter;
 
 sub mylog1 { return 1; };
@@ -31,6 +28,7 @@ package MyTest::Child;
 
 use strict;
 use warnings;
+use lib "../lib/";
 use Hook::Filter;
 
 sub mylog1 { return 1; };
@@ -49,6 +47,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Test::More;
+use lib "../lib/";
 
 sub mylog1 { return 1; };
 sub mylog2 { return 1; };
@@ -71,12 +70,12 @@ BEGIN {
     `echo "     # an other commentar" >> $rule_file`;
     `echo "     " >> $rule_file`;
     `echo "0" >> $rule_file`;
-    `echo "is_sub('MyTest::mylog1')" >> $rule_file`;
-    `echo "is_sub('main::mylog2')" >> $rule_file`;
+    `echo "subname eq 'MyTest::mylog1'" >> $rule_file`;
+    `echo "subname eq 'main::mylog2'" >> $rule_file`;
     `echo " # yet an other commentar" >> $rule_file`;
-    `echo "is_sub(qr{mylog3\$})" >> $rule_file`;
-    `echo "is_sub(qr{Child.*[23]\$})" >> $rule_file`;
-    
+    `echo "subname =~ /mylog3\$/" >> $rule_file`;
+    `echo "subname =~ /Child.*[23]\$/" >> $rule_file`;
+
     use_ok('Hook::Filter','rules',$rule_file,'hook',['mylog1','mylog2','mylog3']);
 }
 

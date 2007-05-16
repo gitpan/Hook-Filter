@@ -2,9 +2,10 @@
 #
 #   Hook::Filter::Rule - A filter rule
 #
-#   $Id: Rule.pm,v 1.1 2006/01/27 06:35:48 erwan Exp $
+#   $Id: Rule.pm,v 1.2 2007/05/16 13:31:36 erwan_lemonnier Exp $
 #
 #   060301 erwan Created
+#   070516 erwan Small POD and layout fixes
 #
 
 package Hook::Filter::Rule;
@@ -17,11 +18,9 @@ use Data::Dumper;
 use Symbol;
 use Module::Pluggable search_path => ['Hook::Filter::Plugins'], require => 1;
 
-our $VERSION = '0.01';
-
 #----------------------------------------------------------------
 #
-#   load test functions from plugins 
+#   load test functions from plugins
 #
 
 INIT {
@@ -31,7 +30,7 @@ INIT {
     foreach my $plugin (Hook::Filter::Rule->plugins()) {
 	my @tests = $plugin->register();
 	# TODO: test that @tests is an array of strings. die with BUG:
-	
+
 	foreach my $test ($plugin->register()) {
 	    if (exists $TESTS{$test}) {
 		croak "invalid plugin function: test function [$test] exported by plugin [$plugin] is already exported by an other plugin.";
@@ -58,7 +57,7 @@ sub new {
     }
 
     $self->{RULE} = $rule;
-    
+
     return $self;
 }
 
@@ -95,7 +94,7 @@ sub source {
 sub eval {
     my $self = shift;
     my $rule = $self->{RULE};
-    
+
     my $res = eval $rule;
     if ($@) {
 	# in doubt, let's assume we are not filtering anything, ie allow function calls as if we were not here
@@ -116,30 +115,26 @@ __END__
 
 Hook::Filter::Rule - A hook filter rule
 
-=head1 VERSION
-
-$Id: Rule.pm,v 1.1 2006/01/27 06:35:48 erwan Exp $
-
 =head1 DESCRIPTION
 
-WARNING: if you only intend to use Hook::Filter you won't have 
+WARNING: if you only intend to use Hook::Filter you won't have
 to actually use Hook::Filter::Rule and can skip this page.
 
 A filter rule is a perl expression that evaluates to either true or false.
 Each time a call is made to one of the hooked subroutines all the filter
-rules registered in Hook::Filter are evaluated, and if one of them returns
+rules registered in Hook::Filter::Hook are evaluated, and if one of them returns
 true, the hooked function is called. Otherwise it is skipped.
 
 A rule is one line of valid perl code that usually combines boolean operators
-with functions implemented in the Hook::Filter::Plugins:: modules.
+with functions implemented in the modules under C<< Hook::Filter::Plugins:: >>.
 
 =head1 SYNOPSIS
 
     use Hook::Filter::Rule;
-    
-    my $rule = Hook::Filter::Rule->new("from_pkg(qr{^Test::})");
+
+    my $rule = Hook::Filter::Rule->new("1");
     if ($rule->eval) {
-        print "just now, the rule [".$rule->rule."] is true\n";
+	print "just now, the rule [".$rule->rule."] is true\n";
     }
 
 C<< $rule->eval() >> returns true when the filtered subroutines is called
@@ -153,8 +148,8 @@ from a package whose namespace starts with C<< Test:: >>.
 
 Return a new Hook::Filter::Rule created from the string I<$rule>. I<$rule>
 is a valid line of perl code that should return either true or false when
-eval-ed. It can use any of the functions exported by the plugins modules 
-located under 'Hook::Filter::Plugins::'.
+eval-ed. It can use any of the functions exported by the plugins modules
+located under C<< Hook::Filter::Plugins:: >>.
 
 =item B<eval>()
 
@@ -198,17 +193,17 @@ See Hook::Filter
 
 =head1 SEE ALSO
 
-See Hook::Filter, Hook::Filter::Hook, Hook::Filter::Plugins::Location.
+See Hook::Filter, Hook::Filter::Hook, modules under Hook::Filter::Plugins::.
+
+=head1 VERSION
+
+$Id: Rule.pm,v 1.2 2007/05/16 13:31:36 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 
 Erwan Lemonnier C<< <erwan@cpan.org> >>
 
-=head1 COPYRIGHT AND LICENSE
-
-See Hook::Filter.
-
-=head1 DISCLAIMER OF WARRANTY
+=head1 LICENSE
 
 See Hook::Filter.
 

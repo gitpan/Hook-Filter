@@ -1,18 +1,15 @@
-#!/usr/local/bin/perl
 #################################################################
 #
-#   $Id: 03_test_hook_filter_rule.t,v 1.1 2006/01/27 06:56:16 erwan Exp $
+#   $Id: 03_test_hook_filter_rule.t,v 1.3 2007/05/16 14:09:09 erwan_lemonnier Exp $
 #
-#   @author       erwan lemonnier
-#   @description  test Hook::Filter::Rule
-#   @system       pluto
-#   @function     base
+#   test hook filter rules
 #
 
 use strict;
 use warnings;
 use Data::Dumper;
 use Test::More;
+use lib "../lib/";
 
 BEGIN {
     eval "use Module::Pluggable"; plan skip_all => "Module::Pluggable required for testing Hook::Filter" if $@;

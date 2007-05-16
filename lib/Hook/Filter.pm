@@ -2,10 +2,11 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.2 2006/05/23 07:12:48 erwan Exp $
+#   $Id: Filter.pm,v 1.3 2007/05/16 14:36:51 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
+#   070516 erwan Updated POD and license, added flush_rules and add_rule
 #
 
 package Hook::Filter;
@@ -15,14 +16,15 @@ use strict;
 use warnings;
 use Carp qw(confess croak);
 use File::Spec;
-use Hook::Filter::Hook;
 use Hook::Filter::Rule;
+use Hook::Filter::RulePool qw(get_rule_pool);
+use Hook::Filter::Hooker qw(filter_sub);
 use base qw(Exporter);
 use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 #----------------------------------------------------------------
 #
@@ -31,7 +33,7 @@ our $VERSION = '0.02';
 #----------------------------------------------------------------
 
 # the rule file actually used by Hook::Filter, and as declared with parameter 'rules'
-my $RULES_FILE;             
+my $RULES_FILE;
 
 # hooked functions per namespace
 my %HOOKED_SUBS;
@@ -87,7 +89,7 @@ sub import {
     }
 
     # propagate super class's import
-    $class->export_to_level(1,undef,());    
+    $class->export_to_level(1,undef,());
 }
 
 sub _test_import_flush {
@@ -105,7 +107,10 @@ sub _test_import_flush {
 # This block executes after import and before running actual program
 INIT {
 
-    #----------------------------------------------------------------    
+    # initiate a rule pool and a hooker
+    my $pool = get_rule_pool();
+
+    #----------------------------------------------------------------
     #
     #   find rules file
     #
@@ -121,32 +126,36 @@ INIT {
 	}
     }
 
-    # if no rules file found, skip the rest
-    return if (!defined $RULES_FILE || !-f $RULES_FILE);
-
-    #----------------------------------------------------------------    
+    #----------------------------------------------------------------
     #
-    #   load rules
+    #   load rules from rules file, if any
     #
 
-    my $hook = Hook::Filter::Hook->new();
+    if (defined $RULES_FILE && -f $RULES_FILE) {
 
-    # TODO: support runtime monitoring of rules file and update of rules upon changes in file
+	# TODO: support runtime monitoring of rules file and update of rules upon changes in file
 
-    open(IN,"$RULES_FILE")
-	or confess "failed to open Hook::Filter rules file [$RULES_FILE]: $!";
-    while (my $line = <IN>) {
-	chomp $line;
-	next if ($line =~ /^\s*\#/);
-	next if ($line =~ /^\s*$/);
-	my $rule = Hook::Filter::Rule->new($line);
-	$rule->source($RULES_FILE);
-	$hook->register_rule($rule);
+	open(IN,"$RULES_FILE")
+	    or confess "failed to open Hook::Filter rules file [$RULES_FILE]: $!";
+	while (my $line = <IN>) {
+	    chomp $line;
+	    next if ($line =~ /^\s*\#/);
+	    next if ($line =~ /^\s*$/);
+
+	    my $rule = new Hook::Filter::Rule($line);
+	    $rule->source($RULES_FILE);
+	    $pool->add_rule($rule);
+	}
+	close(IN);
     }
-    close(IN);
-    
+
+    #----------------------------------------------------------------
+    #
+    #   wrap all filtered methods with the firewalling hook
+    #
+
     foreach my $pkg (keys %HOOKED_SUBS) {
-	# if a module 'use Hook::Filter' without specifying 'hook => ...', the list of hooked
+	# if a module uses Hook::Filter without specifying 'hook => ...', the list of hooked
 	# functions should be the same as in the main declaration
 	if (ref \$HOOKED_SUBS{$pkg} eq 'SCALAR') {
 	    if ($HOOKED_SUBS{$pkg} ne 'main') {
@@ -154,13 +163,13 @@ INIT {
 	    }
 	    $HOOKED_SUBS{$pkg} = $HOOKED_SUBS{'main'};
 	}
-	
+
 	foreach my $method (@{$HOOKED_SUBS{$pkg}}) {
 	    # if method is already a complete path, use it, hence modifying a method in an other module
 	    if ($method =~ /::/) {
-		$hook->filter_sub($method);
+		filter_sub($method);
 	    } else {
-		$hook->filter_sub($pkg."::".$method);
+		filter_sub($pkg."::".$method);
 	    }
 	}
     }
@@ -174,80 +183,90 @@ __END__
 
 Hook::Filter - A runtime filtering layer on top of subroutine calls
 
-=head1 SYNOPSIS
-
-Imagine you have a big program using a logging library that
-exports 3 functions called I<mydebug>, I<myinfo> and I<mywarn>.
-Those functions generate far too much log, so you want
-to skip calling them except in some specific circumstances.
-
-In your main program, write:
-
-    use Hook::Filter hook => ["mydebug","myinfo","mywarn"];
-
-In all modules making use of the logging library, write:
-
-    use Hook::Filter;
-
-Then create a file called I<./hook_filter.rules>. This file
-contains boolean expressions that specify when calls
-to the filtered subroutines should be allowed:
-
-    # allow calls to 'mydebug' only inside package 'My::Filthy:Attempt'
-    is_sub('mydebug') && from_pkg('My::Filthy::Attempt')
-
-    # allow all calls to 'myinfo' except from inside packages under the namespace My::Test::
-    is_sub('myinfo') && !from_pkg(/^My::Test/)
-
-    # allow calls to 'mywarn' from function 'do_stuff' in package 'main' 
-    # whose third argument is a message that does not match the string 'invalid login name' 
-    is_sub('mywarn') && from_sub('do_stuff') && from_pkg('main') && !has_arg(3,/invalid login name/)
-
-    # all other calls to 'myinfo', 'mydebug' or 'mywarn' will be skipped
-    
-=head1 SYNOPSIS, Log::Dispatch
-
-Your program uses C<< Log::Dispatch >>. You want to enable Hook::Filter
-on top of the methods C<< log >> and C<< log_to >> from C<< Log::Dispatch >> 
-everywhere at once. And you want to use the filter rules located in 
-C<< /etc/myconf/filter_rules.conf >>. 
-Easy: in C<< main >>, write:
-
-    use Hook::Filter rules => '/etc/myconf/filter_rules.conf', hook => ['Log::Dispatch::log','Log::Dispatch::log_to'];
-
-That's all!
-
 =head1 DESCRIPTION
 
 Hook::Filter is a runtime firewall for subroutine calls.
 
-Hook::Filter lets you hook some subroutines and define rules to specify
-when calls to those subroutines should be allowed or skipped. Those rules
-are very flexible and are eval-ed during runtime each time a call to one
-of the hooked subroutine is made. 
+Hook::Filter lets you wrap one or more subroutines with a filter that
+either forwards calls to the subroutine or blocks them, depending on
+a number of rules that you define yourself. Those rules are simply
+Perl one-liners that must evaluate to false (block the call) or true
+(allow it).
+
+The filtering rules are stored in a file, called the rules file.
+
+Each time a call is made to one of the filtered subroutines, all the
+filtering rules are eval-ed, and if one of them returns true, the
+call is forwarded, otherwise it is blocked. If no rules file exists,
+or if a rule dies or contains syntax errors, all calls are forwarded
+by default.
+
+Filtering rules are very flexible. You can block or allow calls to
+a subroutine based on things such as the caller's identity, the
+values of the arguments passed to the subroutine, the structure
+of the call stack,
+or basically any other test that can be implemented in Perl.
+
+=head1 SYNOPSIS
+
+To hook a number of subroutines:
+
+    # filter the subs mydebug() and myinfo() located in the current
+    # module, as well as sub mywarn() located in Some::Other::Module
+    use Hook::Filter hook => ["mydebug","myinfo","Some::Other::Module::mywarn"];
+
+Then create a rules file. By default it is a file called I<./hook_filter.rules>,
+and could look like:
+
+
+    # allow calls to 'mydebug' only inside package 'My::Filthy:Attempt'
+    subname eq 'mydebug' && from =~ /^My::Filthy::Attempt/
+
+    # allow calls only if the caller's fully qualified name matches a pattern
+    from =~ /^My::Filthy::Attempt::func$/
+
+    # allow calls only if the subroutine's 2nd argument matches /bob/
+    args(1) =~ /bob/
+
+    # all other calls to 'myinfo', 'mydebug' or 'mywarn' will be skipped
+
+To see which test functions can be used in rules, see Hook::Filter::Plugins::Library.
 
 =head2 RULES
 
 A rule is one line of valid perl code that returns either true or false
 when eval-ed. This line of code is usually made of boolean operators
 combining functions that are exported by the modules located under
-Hook::Filter::Plugins::. 
+Hook::Filter::Plugins::. See those modules for more details.
 
-See Hook::Filter::Plugins::Location for details.
+Rules are loaded from a file. By default this file is called
+C<< hook_filter.rules >> and must be located either in the running
+program current directory or in the user's home directory.
 
-Rules are loaded from a file. See the import parameter C<< rules >>
-for a description of how to specify the rules file.
+You can change the default name and location of the rules file
+with the import parameter C<< rules >>.
+
+If no rules file is found, all subroutine calls will be allowed
+by default.
 
 Rules are parsed from the rules file only once, when the module inits.
 
-This file follows a standard syntax: a line starting with C<< # >> is
-a comment, any other line is considered to be a rule, ie a valid line
-of perl code.
+The rules file has a straightforward syntax:
+
+=over 4
+
+=item * any line starting with C<< # >> is a comment
+
+=item * any empty line is skipped
+
+=item * any other line is considered to be a rule, ie a valid line of perl code
+
+=back
 
 Each time one of the filtered subroutines is called, all loaded rules
 are eval-ed until one returns true or all returned false. If one returns
-true, the filtered subroutine is called transparantly, otherwise it is
-skipped and its return value is set to either undef or an empty list,
+true, the call is forwarded to filtered subroutine, otherwise it is
+skipped and a return value spoofed: either undef or an empty list,
 depending on the context.
 
 If a rule dies/croaks/confess upon being eval-ed (f.ex. when you left
@@ -255,73 +274,101 @@ a syntax error in your rules file), it will be assumed
 to have returned true. This is a form of fail-safe policy. A warning
 message with a complete diagnostic will be emitted with C<< warn >>.
 
-=head2 CREATING NEW RULE TESTS
+=head2 EXTENDING THE PLUGIN LIBRARY
 
-Filter rules are made of perl code mixed with test functions that are imported
-from the modules located under C<< Hook::Filter::Plugins:: >>. Hook::Filter comes
-with a number of default plugin modules that implement the default rule
-tests (such as C<< from_sub >>, C<< is_sub >>, C<< has_arg >>, etc.). Those modules
-are loaded into Hook::Filter using Module:Pluggable. It is therefore
-quite easy to extend the existing set of test functions by writing your
-own Hook::Filter plugins. See I<Hook::Filter::Plugins::Location> for an
-exemple on how to do that.
+The default plugin Hook::Filter::Plugins::Library offers a number of
+functions that can be used inside the filter rules, but you may want
+extend those functions with your own ones.
+
+You can easily do that by writing a new plugin module having the same
+structure as Hook::Filter::Plugins::Library and placing it under
+Hook/Filter/Plugins/. See Hook::Filter::Hooker and Hook::Filter::Plugins::Library
+for details on how to do that.
 
 =head2 CAVEATS
 
-When a call to a subroutine is allowed, the input and output arguments
+=over 4
+
+=item * Return values: when a call to a subroutine is allowed, the input and output arguments
 of the subroutine are forwarded without modification. But when the call
 is blocked, the subroutine response is simulated and will be C<< undef >>
-in SCALAR context and an empty list in ARRAY context. So do not filter
+in SCALAR context and an empty list in ARRAY context. Therefore, DO NOT filter
 subroutines whose return values are significant for the rest of your code.
 
-Time. Hook::Filter evaluates all filter rules for each call to a 
+=item * Execution time: Hook::Filter evaluates all filter rules for each call to a
 filtered subroutine. It would therefore be very unappropriate to
-filter a heavily used subroutine.
+filter a heavily used subroutine in speed requiring applications.
+
+=back
 
 =head2 USE CASE
 
-Why the hell would one want to do such a creepy thing to his code? 
+Why would one need a runtime function call firewall??
+Here are a couple of relevant use cases:
 
-Well, the main use case if that of easily building a log policy on top of a 
-logging library in a large application. You want a dynamic and flexible
-way to define what should be logged and in which circumstances, without
-having to actually edit the aplication's code. Just use Hook::Filter
-like in the SYNOPSIS and define a system wide rules file.
+=over 4
 
-Or you have a large application that is crashing and you decide to turn on 
-debug verbosity system wide. You do so and get gazillions of log messages.
-Instead of greping your way through them or starting your debugger, you use Hook::Filter at the relevant
-places in your application and filter away all irrelevant debug messages with
-a tailored set of rules that allow only the right information to be logged.
+=item * A large application logs a lot of information. You want to implement
+a logging policy to limit the amount of logged information, but you don't want
+to modify the logging code. You do that by filtering the functions defined in
+the logging API with Hook::Filter, and by defining a rules file that implements
+your logging policy.
 
-Your application is managed during runtime by an awe inspiring AI engine that 
-continuously produces filter rules to dynamically alter the call flow
-inside you application (don't ask why! this sounds like sick design anyway...).
+=item * A large application crashes regularly so you decide to turn on debugging
+messages system wide with full verbosity. You get gazillions of log messages.
+Instead of greping your way through them or starting your debugger, you use Hook::Filter
+to filter the function that logs debug messages and define tailored rules that
+allow only relevant debug messages to be logged.
 
-The concept of a dynamic subroutine call filter being somewhat mind bobbling,
-you will surely imagine some new twisted use cases (and let me know then!).
+=back
 
-=head1 INTERFACE
+The concept of a blocking/allowing subroutine call dynamically is somewhat
+mind bobbling. Don't let yourself get too excited though. Doing that kind of
+dynamic stuff makes your code harder to understand for non-dynamic developers,
+hence reducing code stability.
 
-Hook::Filter exports no functions. It only has the following import parameters:
+=head1 INTERFACE - API
+
+
+
+=head1 INTERFACE - IMPORT PARAMETERS
+
+Hook::Filter accepts the following import parameters:
 
 =over 4
 
 =item C<< rules => $rules_file >>
 
 Specify the complete path to the rules file. This import parameter can be used
-only once in a program (usually in package C<< main >>) independently of how many times C<< use Hook::Filter >> 
-is written. If it is not specified anywhere, Hook::Filter will by default search
-for a file named C<< hook_filter.rules >> located in C<< ./ >> or under 
-C<< ~/.hook_filter/ >>.
-If no file is found or if the rules file contains no valid rules, no subroutines
-will be filtered.
+only once in a program (usually in package C<< main >>) independently of how many
+times C<< Hook::Filter >> is used.
+
+See the RULES section for details.
+
+Example:
+
+    # look for rules in the local file 'my_rules'
+    use Hook::Filter rules => 'my_rules';
 
 =item C<< hook => $subname1 >> or C<< hook => [$subname1,$subname2...] >>
 
-Specify which subroutines should be filtered in the current module. If 
-Hook::Filter is used without specifying C<< hook >>, the same function
-names as specified in package C<< main >> are taken.
+Specify which subroutines should be filtered in the current module. C<$subname>
+can either be a fully qualified name or just a subroutine name from a
+subroutine located in the current package.
+
+If you use Hook::Filter without specifying C<< hook >>, the same subroutines
+as specified in package C<< main >> are assumed.
+
+Example:
+
+    # filter function debug in the current package
+    use Hook::Filter hook => 'debug';
+
+    # filter function debug in an other package
+    use Hook::Filter hook=> 'Other::Package::debug';
+
+    # do both at once
+    use Hook::Filter hook=> [ 'Other::Package::debug', 'debug' ];
 
 =back
 
@@ -361,41 +408,28 @@ Please report any bugs or feature requests to
 C<bug-hook-filter@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org>.
 
+=head1 REPOSITORY
+
+The source of Hook::Filter is hosted at sourceforge. You can access
+it at https://sourceforge.net/projects/hook-filter/.
+
 =head1 AUTHOR
 
 Written by Erwan Lemonnier C<< <erwan@cpan.org> >> based on inspiration
 received during the 2005 perl Nordic Workshops. Kind thanks to Claes Jacobsson &
 Jerker Montelius for their suggestions and support!
 
-=head1 COPYRIGHT AND LICENSE
+=head1 LICENSE
 
-Copyright (C) 2005 by Erwan Lemonnier C<< <erwan@cpan.org> >>
+This code was developed partly during free-time
+and partly at the Swedish Premium Pension Authority as part of
+the Authority's software development activities. This code is distributed
+under the same terms as Perl itself. We encourage you to help us improving
+this code by sending feedback and bug reports to the author(s).
 
-This module is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself. See L<perlartistic>.
-
-=head1 DISCLAIMER OF WARRANTY
-
-Because this software is licensed free of charge, there is no warranty
-for the software, to the extent permitted by applicable law. Except when
-otherwise stated in writing the copyright holders and/or other parties
-provide the software "as is" without warranty of any kind, either
-expressed or implied, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose. The
-entire risk as to the quality and performance of the software is with
-you. Should the software prove defective, you assume the cost of all
-necessary servicing, repair, or correction.
-
-In no event unless required by applicable law or agreed to in writing
-will any copyright holder, or any other party who may modify and/or
-redistribute the software as permitted by the above licence, be
-liable to you for damages, including any general, special, incidental,
-or consequential damages arising out of the use or inability to use
-the software (including but not limited to loss of data or data being
-rendered inaccurate or losses sustained by you or third parties or a
-failure of the software to operate with any other software), even if
-such holder or other party has been advised of the possibility of
-such damages.
+This code comes with no warranty. The Swedish Premium Pension Authority and the author(s)
+decline any responsibility regarding the possible use of this code or any consequence
+of its use.
 
 =cut
 
