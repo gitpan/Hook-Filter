@@ -2,11 +2,12 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.3 2007/05/16 14:36:51 erwan_lemonnier Exp $
+#   $Id: Filter.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
 #   070516 erwan Updated POD and license, added flush_rules and add_rule
+#   070522 erwan More POD + don't use rule file unless 'rules' specified in import
 #
 
 package Hook::Filter;
@@ -24,7 +25,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 #----------------------------------------------------------------
 #
@@ -57,9 +58,9 @@ sub import {
 	} elsif (ref \$args{rules} eq 'SCALAR') {
 	    $RULES_FILE = $args{rules};
 	} else {
-	    croak "Invalid parameter: 'rules' for Hook::Filter should be a string, but was [".Dumper($args{rules_path})."].";
+	    croak "Invalid parameter: 'rules' for Hook::Filter should be a string, but was [".Dumper($args{rules})."].";
 	}
-	delete $args{rules_path};
+	delete $args{rules};
     }
 
     # check parameter 'hook', indicating which subroutines to filter in this package
@@ -109,22 +110,6 @@ INIT {
 
     # initiate a rule pool and a hooker
     my $pool = get_rule_pool();
-
-    #----------------------------------------------------------------
-    #
-    #   find rules file
-    #
-
-    if (!$RULES_FILE) {
-	# find rules file
-	foreach my $path ('~/.hook_filter','.') {
-	    my $file = File::Spec->catfile($path,"hook_filter.rules");
-	    if (-f $file) {
-		$RULES_FILE = $file;
-		last;
-	    }
-	}
-    }
 
     #----------------------------------------------------------------
     #
@@ -181,7 +166,7 @@ __END__
 
 =head1 NAME
 
-Hook::Filter - A runtime filtering layer on top of subroutine calls
+Hook::Filter - A runtime firewall for subroutine calls
 
 =head1 DESCRIPTION
 
@@ -189,159 +174,163 @@ Hook::Filter is a runtime firewall for subroutine calls.
 
 Hook::Filter lets you wrap one or more subroutines with a filter that
 either forwards calls to the subroutine or blocks them, depending on
-a number of rules that you define yourself. Those rules are simply
-Perl one-liners that must evaluate to false (block the call) or true
+a number of rules that you define yourself. Each rule is simply one
+line of Perl code that must evaluate to false (block the call) or true
 (allow it).
 
-The filtering rules are stored in a file, called the rules file.
+The filtering rules are fetched from a file, called the rules file, or
+they can be injected dynamically at runtime.
 
 Each time a call is made to one of the filtered subroutines, all the
 filtering rules are eval-ed, and if one of them returns true, the
-call is forwarded, otherwise it is blocked. If no rules file exists,
-or if a rule dies or contains syntax errors, all calls are forwarded
-by default.
+call is forwarded, otherwise it is blocked. If no rules are defined,
+all calls are forwarded by default.
 
 Filtering rules are very flexible. You can block or allow calls to
 a subroutine based on things such as the caller's identity, the
 values of the arguments passed to the subroutine, the structure
-of the call stack,
-or basically any other test that can be implemented in Perl.
+of the call stack, or basically any other test that can be implemented
+in Perl.
 
 =head1 SYNOPSIS
 
-To hook a number of subroutines:
+To filter calls to the local subroutines C<mydebug>, C<myinfo> and
+to C<Some::Other::Module::mywarn>:
 
-    # filter the subs mydebug() and myinfo() located in the current
-    # module, as well as sub mywarn() located in Some::Other::Module
-    use Hook::Filter hook => ["mydebug","myinfo","Some::Other::Module::mywarn"];
+    use Hook::Filter hook => [ "mydebug" ,"myinfo", "Some::Other::Module::mywarn" ];
 
-Then create a rules file. By default it is a file called I<./hook_filter.rules>,
-and could look like:
+Filter calls to the local subroutine C<_debug>, and import filtering
+rules from the file C<~/debug.rules>:
 
+    use Hook::Filter hook => '_debug', rules => '~/debug.rules';
 
-    # allow calls to 'mydebug' only inside package 'My::Filthy:Attempt'
+Then in the file C<~/debug.rules>, write the following rules:
+
+    # allow calls to 'mydebug' from within module 'My::Filthy:Attempt'
     subname eq 'mydebug' && from =~ /^My::Filthy::Attempt/
 
-    # allow calls only if the caller's fully qualified name matches a pattern
-    from =~ /^My::Filthy::Attempt::func$/
+    # allow calls only from within a specific subroutine
+    from eq 'My::Filthy::Attempt::func'
 
     # allow calls only if the subroutine's 2nd argument matches /bob/
     args(1) =~ /bob/
 
     # all other calls to 'myinfo', 'mydebug' or 'mywarn' will be skipped
 
+You could also inject those rules dynamically at runtime:
+
+    use Hook::Filter::RulePool qw(get_rule_pool);
+
+    get_rule_pool->add_rule("subname eq 'mydebug' && from =~ /^My::Filthy::Attempt/");
+                 ->add_rule("from =~ /^My::Filthy::Attempt::func$/");
+                 ->add_rule("args(1) =~ /bob/");
+
 To see which test functions can be used in rules, see Hook::Filter::Plugins::Library.
 
-=head2 RULES
+=head1 RULES
 
-A rule is one line of valid perl code that returns either true or false
-when eval-ed. This line of code is usually made of boolean operators
-combining functions that are exported by the modules located under
-Hook::Filter::Plugins::. See those modules for more details.
+=head2 SYNTAX
 
-Rules are loaded from a file. By default this file is called
-C<< hook_filter.rules >> and must be located either in the running
-program current directory or in the user's home directory.
+A rule is a string containing one line of valid perl code that returns
+either true or false when eval-ed. This line of code is usually made of
+boolean operators combining functions that are exported by the modules
+located under C<Hook::Filter::Plugins::>. See those modules for more details.
 
-You can change the default name and location of the rules file
-with the import parameter C<< rules >>.
-
-If no rules file is found, all subroutine calls will be allowed
-by default.
-
-Rules are parsed from the rules file only once, when the module inits.
-
-The rules file has a straightforward syntax:
+If you specify a rule file with the import parameter C<rules>, the rules
+will be parsed out of this file according to the following syntax:
 
 =over 4
 
-=item * any line starting with C<< # >> is a comment
+=item * any line starting with C<< # >> is a comment.
 
-=item * any empty line is skipped
+=item * any empty line is ignored.
 
-=item * any other line is considered to be a rule, ie a valid line of perl code
+=item * any other line is considered to be a rule, ie a valid line of perl code that can be eval-ed.
 
 =back
 
 Each time one of the filtered subroutines is called, all loaded rules
 are eval-ed until one returns true or all returned false. If one returns
-true, the call is forwarded to filtered subroutine, otherwise it is
+true, the call is forwarded to the filtered subroutine, otherwise it is
 skipped and a return value spoofed: either undef or an empty list,
 depending on the context.
 
 If a rule dies/croaks/confess upon being eval-ed (f.ex. when you left
-a syntax error in your rules file), it will be assumed
-to have returned true. This is a form of fail-safe policy. A warning
-message with a complete diagnostic will be emitted with C<< warn >>.
+a syntax error in the rule's string), it will be assumed
+to have returned true. This is a form of fail-safe policy. You will
+also get a warning message with a complete diagnostic.
+
+=head2 RULE POOL
+
+All rules are stored in a rule pool. You can use this pool to access
+and manipulate rules during runtime.
+
+There are 2 mechanisms to load rules into the pool:
+
+=over 4
+
+=item * Rules can be imported from a file at INIT time. Just specify the path
+and name of this file with the import parameter C<< rules >>, and fill
+this file with rules as shown in SYNOPSIS.
+
+=item * Rules can also be injected dynamically at runtime. The following code
+injects a rule that is always true, hence always allowing calls to the
+filtered subroutines:
+
+    use Hook::Filter::RulePool qw(get_rule_pool);
+    get_rule_pool->add_rule("1");
+
+=back
+
+Rules can all be flushed at runtime:
+
+    get_rule_pool->flush_rules();
+
+For other operations on rules, see the modules C<Hook::Filter::RulePool>
+and C<Hook::Filter::Rule>.
+
+=head2 ALLOW ALL BY DEFAULT
+
+If no rules are registered in the rule pool, or if all registered rules
+die/croak when eval-ed, the default behaviour is to allow all calls to
+the filtered subroutines.
+
+That would happen for example if you specify no rule file via the import
+parameter C<rules> and register no rules dynamically afterward.
+
+To change this default behaviour, just add one default rule
+that always returns false:
+
+    use Hook::Filter::RulePool qw(get_rule_pool);
+    get_rule_pool->add_rule("0");
+
+All calls to the filtered subroutines are then blocked by default, as
+long as no rule evals to true.
 
 =head2 EXTENDING THE PLUGIN LIBRARY
 
-The default plugin Hook::Filter::Plugins::Library offers a number of
+The default plugin C<Hook::Filter::Plugins::Library> offers a number of
 functions that can be used inside the filter rules, but you may want
-extend those functions with your own ones.
+to extend this library with your own functions.
 
 You can easily do that by writing a new plugin module having the same
-structure as Hook::Filter::Plugins::Library and placing it under
-Hook/Filter/Plugins/. See Hook::Filter::Hooker and Hook::Filter::Plugins::Library
-for details on how to do that.
+structure as C<Hook::Filter::Plugins::Library> and placing it under
+C<Hook/Filter/Plugins/>. See C<Hook::Filter::Hooker> and
+C<Hook::Filter::Plugins::Library> for details on how to do that.
 
-=head2 CAVEATS
+=head1 INTERFACE
 
-=over 4
+C<Hook::Filter> exports no functions.
 
-=item * Return values: when a call to a subroutine is allowed, the input and output arguments
-of the subroutine are forwarded without modification. But when the call
-is blocked, the subroutine response is simulated and will be C<< undef >>
-in SCALAR context and an empty list in ARRAY context. Therefore, DO NOT filter
-subroutines whose return values are significant for the rest of your code.
-
-=item * Execution time: Hook::Filter evaluates all filter rules for each call to a
-filtered subroutine. It would therefore be very unappropriate to
-filter a heavily used subroutine in speed requiring applications.
-
-=back
-
-=head2 USE CASE
-
-Why would one need a runtime function call firewall??
-Here are a couple of relevant use cases:
-
-=over 4
-
-=item * A large application logs a lot of information. You want to implement
-a logging policy to limit the amount of logged information, but you don't want
-to modify the logging code. You do that by filtering the functions defined in
-the logging API with Hook::Filter, and by defining a rules file that implements
-your logging policy.
-
-=item * A large application crashes regularly so you decide to turn on debugging
-messages system wide with full verbosity. You get gazillions of log messages.
-Instead of greping your way through them or starting your debugger, you use Hook::Filter
-to filter the function that logs debug messages and define tailored rules that
-allow only relevant debug messages to be logged.
-
-=back
-
-The concept of a blocking/allowing subroutine call dynamically is somewhat
-mind bobbling. Don't let yourself get too excited though. Doing that kind of
-dynamic stuff makes your code harder to understand for non-dynamic developers,
-hence reducing code stability.
-
-=head1 INTERFACE - API
-
-
-
-=head1 INTERFACE - IMPORT PARAMETERS
-
-Hook::Filter accepts the following import parameters:
+C<Hook::Filter> accepts the following import parameters:
 
 =over 4
 
 =item C<< rules => $rules_file >>
 
-Specify the complete path to the rules file. This import parameter can be used
+Specify the complete path to a rule file. This import parameter can be used
 only once in a program (usually in package C<< main >>) independently of how many
-times C<< Hook::Filter >> is used.
+times C<< Hook::Filter >> is used. The file is parsed at INIT time.
 
 See the RULES section for details.
 
@@ -352,19 +341,20 @@ Example:
 
 =item C<< hook => $subname1 >> or C<< hook => [$subname1,$subname2...] >>
 
-Specify which subroutines should be filtered in the current module. C<$subname>
-can either be a fully qualified name or just a subroutine name from a
-subroutine located in the current package.
+Specify which subroutines to filter. C<$subname> can either be a fully
+qualified name or just the name of a subroutine located in the current
+package.
 
-If you use Hook::Filter without specifying C<< hook >>, the same subroutines
-as specified in package C<< main >> are assumed.
+If you C<use Hook::Filter> inside a package without specifying the import
+parameter C<< hook >>, the same subroutines as specified in package C<< main >>
+will be assumed by default.
 
-Example:
+Examples:
 
-    # filter function debug in the current package
+    # filter function debug() in the current package
     use Hook::Filter hook => 'debug';
 
-    # filter function debug in an other package
+    # filter function debug() in an other package
     use Hook::Filter hook=> 'Other::Package::debug';
 
     # do both at once
@@ -376,27 +366,73 @@ Example:
 
 =over 4
 
-=item Passing wrong arguments to Hook::Filter's import parameters will
+=item Passing wrong arguments to C<Hook::Filter>'s import parameters will
 cause it to croak.
 
-=item The import parameter C<< hook >> must be used at least in package C<< main >>
-otherwise Hook::Filter croaks with an error message.
+=item The import parameter C<< hook >> must be used at least once otherwise
+C<Hook::Filter> croaks with an error message.
 
-=item An IO error when opening the rules file causes Hook::Filter to die.
+=item An IO error when opening the rule file causes Hook::Filter to die.
 
 =item An error in a filter rule will be reported with a perl warning.
 
 =back
 
-=head1 SECURITY
+=head1 RESTRICTIONS
 
-Hook::Filter gives anybody who has the rights to create or manipulate a rules file
-the possibility to inject code into your running application at runtime. This
-can be highly dangerous! Protect your filesystem.
+=head2 SECURITY
 
-=head1 THREADS
+C<Hook::Filter> gives anybody with write permissions toward the rule file
+the possibility to inject code into your application. This can be highly
+dangerous! Protect your filesystem.
+
+=head2 CAVEATS
+
+=over 4
+
+=item * Return values: when a call to a subroutine is allowed, the input and output arguments
+of the subroutine are forwarded without modification. But when the call
+is blocked, the subroutine's return value is simulated and will be C<< undef >>
+in SCALAR context and an empty list in ARRAY context. Therefore, DO NOT filter
+subroutines whose return values are significant for the rest of your code.
+
+=item * Speed: Hook::Filter evaluates all filter rules for each call to a
+filtered subroutine, which is slow. It would therefore be very unappropriate
+to filter a heavily used subroutine in speed requiring applications.
+
+=back
+
+=head2 USE CASE
+
+Why would one need a firewall for subroutine calls?
+Here are a couple of relevant use cases:
+
+=over 4
+
+=item * A large application logs a lot of information. You want to implement
+a logging policy to limit the amount of logged information, but you don't want
+to modify the logging code. You do that by filtering the functions defined in
+the logging API with C<Hook::Filter>, and by defining a rule file that implements
+your logging policy.
+
+=item * A large application crashes regularly so you decide to turn on debugging
+messages system wide with full verbosity. You get megazillions of log messages.
+Instead of greping your way through them or starting your debugger, you use C<Hook::Filter>
+to filter the function that logs debug messages and define tailored rules that
+allow only relevant debug messages to be logged.
+
+=back
+
+=head2 THREADS
 
 Hook::Filter is not thread safe.
+
+=head2 KEEP IT SIMPLE
+
+The concept of blocking/allowing subroutine calls dynamically is somewhat
+unusual and fun. Don't let yourself get too excited though. Doing that kind of
+dynamic stuff makes your code harder to understand for non-dynamic developers,
+hence reducing code stability.
 
 =head1 SEE ALSO
 

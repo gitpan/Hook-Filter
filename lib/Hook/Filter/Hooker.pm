@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Hooker - Wrap subroutines in a firewalling closure
 #
-#   $Id: Hooker.pm,v 1.3 2007/05/16 14:36:51 erwan_lemonnier Exp $
+#   $Id: Hooker.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Use the rule pool
@@ -133,10 +133,9 @@ Hook::Filter::Hooker - Wrap subroutines in a firewalling closure
 
 =head1 DESCRIPTION
 
-This module is used internaly by Hook::Filter to generate an anonymous sub
-(the runtime subroutine firewall itself)
-that is wrapped around each filtered subroutine and either forwards
-the call to the subroutine or stop it and spoofs return values (undef or
+This module is used internaly by Hook::Filter to generate an anonymous
+sub that is wrapped around each filtered subroutine and either forwards
+the call to the subroutine or block it and spoofs return values (undef or
 an empty list depending on context).
 
 =head1 SYNOPSIS
@@ -152,33 +151,33 @@ an empty list depending on context).
 
 =head1 INTERFACE
 
-Hook::Filter::Hooker exports no functions by default. But the following functions
-can be imported upon using Hook::Filter::Hooker:
+C<Hook::Filter::Hooker> exports no functions by default. But the following functions
+can be explicitly imported upon using C<Hook::Filter::Hooker>:
 
 =over 4
 
 =item $hooker->B<filter_sub>($subname)
 
-Add a filter aroun the subroutine C<$subname>. I<$subname> must either be a fully qualified
+Add a filter around the subroutine C<$subname>. I<$subname> must either be a fully qualified
 function name, or the name of a function located in the current package.
 
 All calls to C<< $subname >> will thereafter be redirected
 to a wrapper closure that will evaluate all the rules registered in
-Hook::Filter::RulePool and if one of the rules evals to true,
-the original function C<< $subname >> will be called normally.
-Otherwise it will be skipped and its result spoofed.
+C<Hook::Filter::RulePool> using the method C<eval()> on the pool.
+If C<eval()> returns true, the call is forwarded, otherwise it is
+blocked.
 
 =back
 
 The following class functions are to be used by modules under
-Hook::Filter::Plugins that implement specific test functions
+C<Hook::Filter::Plugins::> that implement specific test functions
 for use in filter rules.
 
-Any use of the following functions in a different context than
-inside the implementation of a filter rule test is guaranteed
+Any use of these functions in a different context than
+inside a plugin implementation is guaranteed
 to return only garbage.
 
-See Hook::Filter::Plugins::Location for a usage example.
+See C<Hook::Filter::Plugins::Library> for a usage example.
 
 =over 4
 
@@ -214,11 +213,9 @@ Return the list of arguments that would be passed to the filtered subroutine.
 
 =over 4
 
-=item C<< $hook->register_rule($rule) >> croaks if I<$rule> is not a Hook::Filter::Rule.
-
 =item C<< $hook->filter_sub(I<$pkg>,I<$func>) >> croaks when passed invalid arguments.
 
-=item The closure wrapping all filtered subroutines emits perl warning when rules die upon being eval-ed.
+=item The closure wrapping all filtered subroutines emits a perl warning when a rule dies upon being eval-ed.
 
 =back
 
@@ -232,7 +229,7 @@ See Hook::Filter, Hook::Filter::Rule, modules under Hook::Filter::Plugins.
 
 =head1 VERSION
 
-$Id: Hooker.pm,v 1.3 2007/05/16 14:36:51 erwan_lemonnier Exp $
+$Id: Hooker.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

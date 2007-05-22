@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:                Hook-Filter
-version:             0.03
-abstract:            A runtime filtering layer on top of subroutine calls
+version:             0.04
+abstract:            A runtime firewall for subroutine calls
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.32
 distribution_type:   module

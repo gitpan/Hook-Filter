@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Plugin::Library - Usefull functions for writing filter rules
 #
-#   $Id: Library.pm,v 1.1 2007/05/16 15:44:21 erwan_lemonnier Exp $
+#   $Id: Library.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Removed from_xxx(), added from(), arg() and subname()
@@ -66,11 +66,11 @@ Hook::Filter::Plugin::Library - Usefull functions for writing filter rules
 =head1 DESCRIPTION
 
 A library of functions usefull when writing filter rules.
-Those functions should be used inside Hook::Filter rules, and only there.
+Those functions should be used inside C<Hook::Filter> rules, and nowhere else.
 
 =head1 SYNOPSIS
 
-Exemples of rules using test functions from Hook::Filter::Plugin::Location:
+Exemples of rules using test functions from C<Hook::Filter::Plugin::Location>:
 
     # allow all subroutine calls made from inside function 'do_this' from package 'main'
     from =~ /main::do:this/
@@ -86,7 +86,7 @@ Exemples of rules using test functions from Hook::Filter::Plugin::Location:
 
 =head1 INTERFACE - TEST FUNCTIONS
 
-The following functions are only exported into Hook::Filter::Rule and
+The following functions are only exported into C<Hook::Filter::Rule> and
 shall only be used inside filter rules.
 
 =over 4
@@ -95,9 +95,39 @@ shall only be used inside filter rules.
 
 Return the fully qualified name of the caller of the filtered subroutine.
 
+Example:
+
+    use Hook::Filter hook => 'foo';
+    use Hook::Filter::RulePool qw(get_rule_pool);
+
+    sub foo {}
+    sub bar1 { foo; }
+    sub bar2 { foo; }
+
+    # add a rule to allow only calls to foo from within bar1 and bar2:
+    get_rule_pool->add_rule("from =~ /bar\d$/");
+
+    foo();  # foo is not called
+    bar1(); # foo is called
+    bar2(); # foo is called
+
 =item B<subname>
 
 Return the fully qualified name of the filtered subroutine being called.
+
+Example:
+
+    use Hook::Filter hook => [ 'foo', 'bar' ];
+    use Hook::Filter::RulePool qw(get_rule_pool);
+
+    sub foo {};
+    sub bar {};
+
+    # add a rule to allow only calls to foo:
+    get_rule_pool->add_rule("subname eq 'main::foo'");
+
+    foo();  # foo is called
+    bar();  # bar is not called
 
 =item B<arg>($pos)
 
@@ -108,30 +138,34 @@ Example:
 
     use Hook::Filter hook => 'debug';
 
-    debug(1,"some message");
+    sub debug {
+        print $_[1]."\n" if ($_[0] <= $VERBOSITY);
+    }
 
-    # in a rule file:
-    # the rule 'arg(0) <= 2' would evaluate to '1 <= 2' and be true
-    # the rule 'arg(1) =~ /some/' would evaluate to '"some message" =~ /some/' and be true
+    # allow calls to debug only if the text matches the name 'bob'
+    get_rule_pool->add_rule("arg(1) =~ /bob/");
+
+    debug(1,"bob did that");      # debug is called
+    debug(3,"david thinks this"); # debug is not called
 
 =back
 
 =head1 INTERFACE - PLUGIN STRUCTURE
 
-Like all plugins under Hook::Filter::Plugins, Hook::Filter::Plugins::Library implements the class method C<< register() >>:
+Like all plugins under C<Hook::Filter::Plugins>, C<Hook::Filter::Plugins::Library> implements the class method C<< register() >>:
 
 =over 4
 
 =item B<register>()
 
-Return the names of the test functions implemented in Hook::Filter::Plugins::Location. Used
-by internally by Hook::Filter::Rule.
+Return the names of the test functions implemented in C<Hook::Filter::Plugins::Location>. Used
+internally by C<Hook::Filter::Rule>.
 
 =back
 
 =head1 DIAGNOSTICS
 
-No diagnostics. Any bug in those test functions would cause a warning emitted by Hook::Filter::Rule.
+No diagnostics. Any bug in those test functions would cause a warning emitted by C<Hook::Filter::Rule::eval()>.
 
 =head1 BUGS AND LIMITATIONS
 
@@ -143,7 +177,7 @@ See Hook::Filter, Hook::Filter::Rule, Hook::Filter::Hooker.
 
 =head1 VERSION
 
-$Id: Library.pm,v 1.1 2007/05/16 15:44:21 erwan_lemonnier Exp $
+$Id: Library.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

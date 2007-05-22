@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Rule - A filter rule
 #
-#   $Id: Rule.pm,v 1.2 2007/05/16 13:31:36 erwan_lemonnier Exp $
+#   $Id: Rule.pm,v 1.3 2007/05/22 15:43:02 erwan_lemonnier Exp $
 #
 #   060301 erwan Created
 #   070516 erwan Small POD and layout fixes
@@ -100,7 +100,7 @@ sub eval {
 	# in doubt, let's assume we are not filtering anything, ie allow function calls as if we were not here
 	warn "WARNING: invalid Hook::Filter rule [$rule] ".
 	    ( (defined $self->{SOURCE})?"from file [".$self->{SOURCE}."] ":"")."caused error:\n".
-	    "[".$@."]. Assuming this rule returned false.\n";
+	    "[".$@."]. Assuming this rule returned true.\n";
 	return 1;
     }
 
@@ -117,16 +117,11 @@ Hook::Filter::Rule - A hook filter rule
 
 =head1 DESCRIPTION
 
-WARNING: if you only intend to use Hook::Filter you won't have
-to actually use Hook::Filter::Rule and can skip this page.
+A filter rule is a string containing a perl expression that evaluates to
+either true or false.
 
-A filter rule is a perl expression that evaluates to either true or false.
-Each time a call is made to one of the hooked subroutines all the filter
-rules registered in Hook::Filter::Hook are evaluated, and if one of them returns
-true, the hooked function is called. Otherwise it is skipped.
-
-A rule is one line of valid perl code that usually combines boolean operators
-with functions implemented in the modules under C<< Hook::Filter::Plugins:: >>.
+A rule may contain calls to functions exported by any module under
+C<< Hook::Filter::Plugins:: >>.
 
 =head1 SYNOPSIS
 
@@ -137,38 +132,36 @@ with functions implemented in the modules under C<< Hook::Filter::Plugins:: >>.
 	print "just now, the rule [".$rule->rule."] is true\n";
     }
 
-C<< $rule->eval() >> returns true when the filtered subroutines is called
-from a package whose namespace starts with C<< Test:: >>.
-
 =head1 INTERFACE
 
 =over 4
 
-=item B<new>(I<$rule>)
+=item my $r = B<new>($rule)
 
-Return a new Hook::Filter::Rule created from the string I<$rule>. I<$rule>
+Return a new C<Hook::Filter::Rule> created from the string C<$rule>. C<$rule>
 is a valid line of perl code that should return either true or false when
-eval-ed. It can use any of the functions exported by the plugins modules
+eval-ed. It can contain calls to any of the functions exported by the plugin modules
 located under C<< Hook::Filter::Plugins:: >>.
 
-=item B<eval>()
+=item $r->B<eval>()
 
-Eval this rule. Depending on the context in which it is run (state of the
-stack, caller, variables, etc.) C<< eval() >> will return either true or false.
+Eval this rule. Return 0 if the rule eval-ed to false. Return 1 if the rule eval-ed
+to true, or if the rule died/croaked.
+
 If the rule dies/croaks/confesses while being eval-ed, a perl warning is
 thrown and the rule is assumed to return true (fail-safe). The warning
 contains details about the error message, the rule itself and where it
 comes from (as specified with C<< source() >>).
 
-=item B<source>(I<$message>)
+=item $r->B<source>($message)
 
-Specify the origin of the rule. If the rule was parsed from a configuration file,
-I<$message> should be the path to this file. This is used in the warning message
-emitted when a rule fails during C<< eval() >>.
+Specify the origin of this rule. If the rule was parsed from a rule file,
+C<$message> should be the path to this file. This is used in the warning
+message emitted when a rule dies during C<< eval() >>.
 
-=item B<rule>()
+=item $r->B<rule>()
 
-Return the rule string (I<$rule> in C<< new() >>).
+Return the rule's string (C<$rule> in C<< new() >>).
 
 =back
 
@@ -179,11 +172,11 @@ Return the rule string (I<$rule> in C<< new() >>).
 =item C<< use Hook::Filter::Rule >> croaks if a plugin module tries to export a function name
 that is already exported by an other plugin.
 
-=item C<< Hook::Filter::Rule->new($rule) >> croaks if I<$rule> is not a scalar.
+=item C<< Hook::Filter::Rule->new($rule) >> croaks if C<$rule> is not a scalar.
 
 =item C<< $rule->eval() >> will emit a perl warning if the rule dies when eval-ed.
 
-=item C<< $rule->source($text) >> croaks if I<$text> is not a scalar.
+=item C<< $rule->source($text) >> croaks if C<$text> is not a scalar.
 
 =back
 
@@ -197,7 +190,7 @@ See Hook::Filter, Hook::Filter::Hook, modules under Hook::Filter::Plugins::.
 
 =head1 VERSION
 
-$Id: Rule.pm,v 1.2 2007/05/16 13:31:36 erwan_lemonnier Exp $
+$Id: Rule.pm,v 1.3 2007/05/22 15:43:02 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

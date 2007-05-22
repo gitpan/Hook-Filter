@@ -13,3 +13,7 @@ Revision history for Perl extension Hook::Filter
         - added the tests from(), arg() and subname()
         - allowed injection of new rules during runtime
         - updated POD
+
+0.04  2007-05-22
+        - more POD
+        - using a rule file is now optional

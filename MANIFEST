@@ -1,4 +1,5 @@
 Changes
+examples/block_by_default.pl
 lib/Hook/Filter.pm
 lib/Hook/Filter/Hooker.pm
 lib/Hook/Filter/Plugins/Library.pm
@@ -16,6 +17,7 @@ t/05_test_rule_file.t
 t/06_test_log_dispatch.t
 t/07_test_pool.t
 t/08_test_injecting_rules.t
+t/09_test_default_behavior.t
 t/10_test_subname.t
 t/11_test_arg.t
 t/13_test_from.t
