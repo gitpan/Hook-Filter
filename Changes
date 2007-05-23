@@ -20,3 +20,6 @@ Revision history for Perl extension Hook::Filter
 
 0.05  2007-05-23
         - allow multiple use of 'rules' if the file stays the same
+
+0.06  2007-05-23
+        - POD updates

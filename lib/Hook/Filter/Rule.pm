@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Rule - A filter rule
 #
-#   $Id: Rule.pm,v 1.3 2007/05/22 15:43:02 erwan_lemonnier Exp $
+#   $Id: Rule.pm,v 1.5 2007/05/23 08:30:59 erwan_lemonnier Exp $
 #
 #   060301 erwan Created
 #   070516 erwan Small POD and layout fixes
@@ -17,6 +17,8 @@ use Carp qw(croak);
 use Data::Dumper;
 use Symbol;
 use Module::Pluggable search_path => ['Hook::Filter::Plugins'], require => 1;
+
+our $VERSION='0.02';
 
 #----------------------------------------------------------------
 #
@@ -136,14 +138,14 @@ C<< Hook::Filter::Plugins:: >>.
 
 =over 4
 
-=item my $r = B<new>($rule)
+=item C<< my $r = new($rule) >>
 
 Return a new C<Hook::Filter::Rule> created from the string C<$rule>. C<$rule>
 is a valid line of perl code that should return either true or false when
 eval-ed. It can contain calls to any of the functions exported by the plugin modules
 located under C<< Hook::Filter::Plugins:: >>.
 
-=item $r->B<eval>()
+=item C<< $r->eval() >>
 
 Eval this rule. Return 0 if the rule eval-ed to false. Return 1 if the rule eval-ed
 to true, or if the rule died/croaked.
@@ -153,13 +155,13 @@ thrown and the rule is assumed to return true (fail-safe). The warning
 contains details about the error message, the rule itself and where it
 comes from (as specified with C<< source() >>).
 
-=item $r->B<source>($message)
+=item C<< $r->source($message) >>
 
 Specify the origin of this rule. If the rule was parsed from a rule file,
 C<$message> should be the path to this file. This is used in the warning
 message emitted when a rule dies during C<< eval() >>.
 
-=item $r->B<rule>()
+=item C<< $r->rule() >>
 
 Return the rule's string (C<$rule> in C<< new() >>).
 
@@ -186,11 +188,11 @@ See Hook::Filter
 
 =head1 SEE ALSO
 
-See Hook::Filter, Hook::Filter::Hook, modules under Hook::Filter::Plugins::.
+See Hook::Filter, Hook::Filter::RulePool, Hook::Filter::Hooker, Hook::Filter::Plugins::Library.
 
 =head1 VERSION
 
-$Id: Rule.pm,v 1.3 2007/05/22 15:43:02 erwan_lemonnier Exp $
+$Id: Rule.pm,v 1.5 2007/05/23 08:30:59 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

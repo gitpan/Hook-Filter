@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Plugin::Library - Usefull functions for writing filter rules
 #
-#   $Id: Library.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
+#   $Id: Library.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Removed from_xxx(), added from(), arg() and subname()
@@ -91,7 +91,7 @@ shall only be used inside filter rules.
 
 =over 4
 
-=item B<from>
+=item C<from>
 
 Return the fully qualified name of the caller of the filtered subroutine.
 
@@ -111,7 +111,7 @@ Example:
     bar1(); # foo is called
     bar2(); # foo is called
 
-=item B<subname>
+=item C<subname>
 
 Return the fully qualified name of the filtered subroutine being called.
 
@@ -129,7 +129,7 @@ Example:
     foo();  # foo is called
     bar();  # bar is not called
 
-=item B<arg>($pos)
+=item C<< arg($pos) >>
 
 Return the argument at position C<$pos> in the list of arguments to be
 passed to the filtered subroutine.
@@ -156,7 +156,7 @@ Like all plugins under C<Hook::Filter::Plugins>, C<Hook::Filter::Plugins::Librar
 
 =over 4
 
-=item B<register>()
+=item C<< register() >>
 
 Return the names of the test functions implemented in C<Hook::Filter::Plugins::Location>. Used
 internally by C<Hook::Filter::Rule>.
@@ -173,11 +173,11 @@ See Hook::Filter
 
 =head1 SEE ALSO
 
-See Hook::Filter, Hook::Filter::Rule, Hook::Filter::Hooker.
+See Hook::Filter, Hook::Filter::Rule, Hook::Filter::RulePool, Hook::Filter::Hooker.
 
 =head1 VERSION
 
-$Id: Library.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
+$Id: Library.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

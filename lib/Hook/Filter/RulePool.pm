@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::RulePool - A pool of filter rules
 #
-#   $Id: RulePool.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
+#   $Id: RulePool.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
 #
 #   070516 erwan Started
 #   070522 erwan flush_rules returns self
@@ -155,14 +155,14 @@ ones.
 
 =over 4
 
-=item my $pool = B<get_rule_pool>();
+=item C<< my $pool = get_rule_pool(); >>
 
 Return the pool containing all known filtering rules.
 C<get_rule_pool> is not exported by default so you have to import it explicitly:
 
     use Hook::Filter::RulePool qw(get_rule_pool);
 
-=item $pool->B<eval_rules>()
+=item C<< $pool->eval_rules() >>
 
 Evaluate all the rules in the pool.
 If one evaluates to true, return true.
@@ -170,23 +170,23 @@ If one of them dies/croaks/confesses, return true.
 If none evaluates to true, return false.
 If the pool contained no rules, return true.
 
-=item $pool->B<add_rule>($rule)
+=item C<< $pool->add_rule($rule) >>
 
 Add the rule C<$rule> to the pool and return C<$pool>.
 C<$rule> must be an instance of C<Hook::Filter::Rule>,
 or a string representing valid perl code that evaluates to either true or false.
 
-=item $pool->B<flush_rules>()
+=item C<< $pool->flush_rules() >>
 
 Remove all rules from the pool and return C<$pool>.
 All filtered calls will then be allowed by default since the pool is empty.
 
-=item $pool->B<get_rules>()
+=item C<< $pool->get_rules() >>
 
 Return a list of all the rules registered in the pool, as instances
 of C<Hook::Filter::Rule>.
 
-=item B<new>()
+=item C<< new() >>
 
 C<Hook::Filter::RulePool> implements the singleton pattern. Therefore, do not use C<new()>
 to instantiate a rule pool, use C<get_rule_pool> instead.
@@ -205,11 +205,11 @@ to instantiate a rule pool, use C<get_rule_pool> instead.
 
 =head1 SEE ALSO
 
-See Hook::Filter, Hook::Filter::Rule.
+See Hook::Filter, Hook::Filter::Rule, Hook::Filter::Hooker, Hook::Filter::Plugins::Library.
 
 =head1 VERSION
 
-$Id: RulePool.pm,v 1.2 2007/05/22 15:43:02 erwan_lemonnier Exp $
+$Id: RulePool.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

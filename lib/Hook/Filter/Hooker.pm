@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Hooker - Wrap subroutines in a firewalling closure
 #
-#   $Id: Hooker.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
+#   $Id: Hooker.pm,v 1.5 2007/05/23 08:26:15 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Use the rule pool
@@ -156,7 +156,7 @@ can be explicitly imported upon using C<Hook::Filter::Hooker>:
 
 =over 4
 
-=item $hooker->B<filter_sub>($subname)
+=item C<< $hooker->filter_sub($subname) >>
 
 Add a filter around the subroutine C<$subname>. I<$subname> must either be a fully qualified
 function name, or the name of a function located in the current package.
@@ -181,29 +181,29 @@ See C<Hook::Filter::Plugins::Library> for a usage example.
 
 =over 4
 
-=item B<get_caller_package()>
+=item C<get_caller_package()>
 
 Return the name of the package calling the filtered subroutine.
 
-=item B<get_caller_file()>
+=item C<get_caller_file()>
 
 Return the name of the file calling the filtered subroutine.
 
-=item B<get_caller_line()>
+=item C<get_caller_line()>
 
 Return the line number at which the filtered subroutine was called.
 
-=item B<get_caller_subname()>
+=item C<get_caller_subname()>
 
 Return the complete name (package+name) of the subroutine calling the filtered subroutine.
 If the subroutine was called directly from the main namespace, return an empty string.
 
-=item B<get_subname()>
+=item C<get_subname()>
 
 Return the complete name of the filtered subroutine for which the rules
 are being eval-ed.
 
-=item B<get_arguments()>
+=item C<get_arguments()>
 
 Return the list of arguments that would be passed to the filtered subroutine.
 
@@ -225,11 +225,11 @@ See Hook::Filter
 
 =head1 SEE ALSO
 
-See Hook::Filter, Hook::Filter::Rule, modules under Hook::Filter::Plugins.
+See Hook::Filter, Hook::Filter::Rule, Hook::Filter::RulePool, Hook::Filter::Plugins::Library.
 
 =head1 VERSION
 
-$Id: Hooker.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
+$Id: Hooker.pm,v 1.5 2007/05/23 08:26:15 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 
