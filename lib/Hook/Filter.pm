@@ -2,12 +2,13 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.4 2007/05/22 15:43:02 erwan_lemonnier Exp $
+#   $Id: Filter.pm,v 1.5 2007/05/23 07:19:28 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
 #   070516 erwan Updated POD and license, added flush_rules and add_rule
 #   070522 erwan More POD + don't use rule file unless 'rules' specified in import
+#   070523 erwan Can use 'rules' multiple time if same rule file specified
 #
 
 package Hook::Filter;
@@ -25,7 +26,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 #----------------------------------------------------------------
 #
@@ -50,16 +51,17 @@ sub import {
 
     # check parameter 'rules', indicating path to the rules file
     if (exists $args{rules}) {
-	if (defined $RULES_FILE) {
-	    croak "Invalid parameter: 'rules' for Hook::Filter cannot be used more than once.";
-	}
-	if (!defined $args{rules}) {
-	    croak "Invalid parameter: 'rules' for Hook::Filter should be a string, but was undef.";
-	} elsif (ref \$args{rules} eq 'SCALAR') {
-	    $RULES_FILE = $args{rules};
-	} else {
-	    croak "Invalid parameter: 'rules' for Hook::Filter should be a string, but was [".Dumper($args{rules})."].";
-	}
+
+	croak "import parameter 'rules' for Hook::Filter should be a string, but was undef."
+	    if (!defined $args{rules});
+
+	croak "import parameter 'rules' for Hook::Filter should be a string, but was [".Dumper($args{rules})."]."
+	    if (ref \$args{rules} ne 'SCALAR');
+
+	croak "you tried to specify 2 different Hook::Filter rule file: [$RULES_FILE] and [".$args{rules}."]. you may have only 1 rule file."
+	    if (defined $RULES_FILE && $RULES_FILE ne $args{rules});
+
+	$RULES_FILE = $args{rules};
 	delete $args{rules};
     }
 

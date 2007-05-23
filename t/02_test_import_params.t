@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 02_test_import_params.t,v 1.3 2007/05/16 14:09:09 erwan_lemonnier Exp $
+#   $Id: 02_test_import_params.t,v 1.4 2007/05/23 07:19:28 erwan_lemonnier Exp $
 #
 #   test Hook:Filter's import parameters
 #
@@ -45,7 +45,7 @@ TEST
 BEGIN {
     eval "use Module::Pluggable"; plan skip_all => "Module::Pluggable required for testing Hook::Filter" if $@;
     eval "use File::Spec"; plan skip_all => "File::Spec required for testing Hook::Filter" if $@;
-    plan tests => 10;
+    plan tests => 11;
 
     my $err;
 
@@ -55,18 +55,21 @@ BEGIN {
 
     # rules_path undefined
     $err = my_use_ok(1,'rules',undef);
-    ok($err =~ /invalid parameter:.*'rules'.*was undef/i,"use with 'rules' => undef");
+    ok($err =~ /import parameter 'rules'.*was undef/i,"use with 'rules' => undef");
 
     # rules_path an array of non scalar
     $err = my_use_ok(1,'rules',[ [1,2,3],"bob"]);
-    ok($err =~ /invalid parameter:.*'rules'.*should be a string, but was \[/i,"use with 'rules' => array of non scalar");
+    ok($err =~ /import parameter 'rules'.*should be a string, but was \[/i,"use with 'rules' => array of non scalar");
 
     # try redefining rules_path
     $err = my_use_ok(0,'rules',"/tmp/var1");
     ok($err eq "","use with 'rules' once");
 
+    $err = my_use_ok(0,'rules',"/tmp/var1");
+    ok($err eq "","use with 'rules' twice, but same file");
+
     $err = my_use_ok(0,'rules',"/tmp/var2");
-    ok($err =~ /invalid parameter:.*'rules'.*cannot be used more than once.*/i,"use with 'rules', trying to redefine search path");
+    ok($err =~ /you tried to specify 2 different Hook::Filter rule file/i,"use with 'rules', trying to redefine search path [$@]");
 
     #
     # test 'hook'

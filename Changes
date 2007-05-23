@@ -17,3 +17,6 @@ Revision history for Perl extension Hook::Filter
 0.04  2007-05-22
         - more POD
         - using a rule file is now optional
+
+0.05  2007-05-23
+        - allow multiple use of 'rules' if the file stays the same
