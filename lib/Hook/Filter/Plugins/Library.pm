@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Plugin::Library - Usefull functions for writing filter rules
 #
-#   $Id: Library.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
+#   $Id: Library.pm,v 1.4 2007/05/24 14:52:37 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Removed from_xxx(), added from(), arg() and subname()
@@ -14,7 +14,7 @@ use strict;
 use warnings;
 use Carp qw(croak);
 use Data::Dumper;
-use Hook::Filter::Hooker qw( get_caller_subname get_caller_package get_subname get_arguments );
+use Hook::Filter::Hooker;# qw( get_caller_subname get_caller_package get_subname get_arguments );
 
 #----------------------------------------------------------------
 #
@@ -31,7 +31,7 @@ sub register {
 #
 
 sub from {
-    return get_caller_subname;
+    return Hook::Filter::Hooker::get_caller_subname();
 }
 
 #----------------------------------------------------------------
@@ -42,7 +42,7 @@ sub from {
 sub arg {
     my $pos = shift;
     croak "invalid rule: function arg expects a number, got: ".Dumper($pos,@_) if (!defined $pos || @_ || $pos !~ /^\d+$/);
-    my @args = get_arguments;
+    my @args = Hook::Filter::Hooker::get_arguments();
     return $args[$pos];
 }
 
@@ -52,7 +52,7 @@ sub arg {
 #
 
 sub subname {
-    return get_subname;
+    return Hook::Filter::Hooker::get_subname();
 }
 
 1;
@@ -177,7 +177,7 @@ See Hook::Filter, Hook::Filter::Rule, Hook::Filter::RulePool, Hook::Filter::Hook
 
 =head1 VERSION
 
-$Id: Library.pm,v 1.3 2007/05/23 08:26:15 erwan_lemonnier Exp $
+$Id: Library.pm,v 1.4 2007/05/24 14:52:37 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

@@ -2,7 +2,7 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.7 2007/05/23 08:16:35 erwan_lemonnier Exp $
+#   $Id: Filter.pm,v 1.8 2007/05/24 14:52:37 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
@@ -10,6 +10,7 @@
 #   070522 erwan More POD + don't use rule file unless 'rules' specified in import
 #   070523 erwan Can use 'rules' multiple time if same rule file specified
 #   070523 erwan POD updates
+#   070524 erwan Import parameter 'hook' is now mandatory
 #
 
 package Hook::Filter;
@@ -27,7 +28,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 #----------------------------------------------------------------
 #
@@ -38,19 +39,27 @@ our $VERSION = '0.06';
 # the rule file actually used by Hook::Filter, and as declared with parameter 'rules'
 my $RULES_FILE;
 
-# hooked functions per namespace
-my %HOOKED_SUBS;
+# list of subs to hijack
+my %HOOK_SUBS;
+
+sub _queue_sub {
+    my ($pkg,$name) = @_;
+    ($name =~ /::/) ? $HOOK_SUBS{$name}=1 : $HOOK_SUBS{$pkg."::".$name}=1;
+}
 
 #----------------------------------------------------------------
 #
-#   import - verify and save import parameters
+#   import - verify import parameters, filter the subs and load the rule file
 #
 
 sub import {
     my($class,%args) = @_;
     my $pkg = caller(0);
 
-    # check parameter 'rules', indicating path to the rules file
+    #
+    # check parameter 'rules', indicating path to the rule file
+    #
+
     if (exists $args{rules}) {
 
 	croak "import parameter 'rules' for Hook::Filter should be a string, but was undef."
@@ -64,103 +73,70 @@ sub import {
 
 	$RULES_FILE = $args{rules};
 	delete $args{rules};
-    }
 
-    # check parameter 'hook', indicating which subroutines to filter in this package
-    if (exists $args{hook}) {
-	if (!defined $args{hook}) {
-	    croak "Invalid parameter: 'hook' should be a string or an array of strings, but was undef.";
-	} elsif (ref $args{hook} eq 'ARRAY') {
-	    foreach my $name (@{$args{hook}}) {
-		if (ref \$name ne 'SCALAR') {
-		    croak "Invalid parameter: 'hook' for Hook::Filter should be a string or an array of strings, but was [".Dumper($args{hook})."].";
-		}
+	#
+	# load the rule file, if any
+	#
+
+	my $pool = get_rule_pool();
+
+	if (-f $RULES_FILE) {
+	    # TODO: support runtime monitoring of rules file and update of rules upon changes in file
+
+	    open(IN,"$RULES_FILE")
+		or confess "failed to open Hook::Filter rules file [$RULES_FILE]: $!";
+	    while (my $line = <IN>) {
+		chomp $line;
+		next if ($line =~ /^\s*\#/);
+		next if ($line =~ /^\s*$/);
+
+		my $rule = new Hook::Filter::Rule($line);
+		$rule->source($RULES_FILE);
+		$pool->add_rule($rule);
 	    }
-	    $HOOKED_SUBS{$pkg} = $args{hook};
-	} elsif (ref \$args{hook} eq 'SCALAR') {
-	    $HOOKED_SUBS{$pkg} = [ $args{hook} ];
-	} else {
-	    croak "Invalid parameter: 'hook' for Hook::Filter should be a string or an array of strings, but was [".Dumper($args{hook})."].";
+	    close(IN);
 	}
-	delete $args{hook};
-    } else {
-	# if no hooked subroutine specified, use the one declared in main
-	if ($pkg eq 'main') {
-	    croak "Invalid parameter: 'use Hook::Filter' must be followed by parameter 'hook' in at least the main module.";
-	}
-
-	$HOOKED_SUBS{$pkg} = "main";
     }
+
+    #
+    # check parameter 'hook', indicating which subroutines to filter
+    #
+
+    croak "you must call Hook::Filter with the import parameter 'hook' set to something"
+	if (!exists $args{hook});
+
+    croak "Invalid parameter: 'hook' should be a string or an array of strings, but was undef."
+	if (!defined $args{hook});
+
+    if (ref $args{hook} eq 'ARRAY') {
+	foreach my $name (@{$args{hook}}) {
+	    if (ref \$name ne 'SCALAR') {
+		croak "Invalid parameter: 'hook' for Hook::Filter should be a string or an array of strings, but was [".Dumper($args{hook})."].";
+	    }
+	    _queue_sub($pkg,$name);
+	}
+    } elsif (ref \$args{hook} eq 'SCALAR') {
+	_queue_sub($pkg,$args{hook});
+    } else {
+	croak "Invalid parameter: 'hook' for Hook::Filter should be a string or an array of strings, but was [".Dumper($args{hook})."].";
+    }
+
+    delete $args{hook};
 
     # propagate super class's import
     $class->export_to_level(1,undef,());
 }
 
-sub _test_import_flush {
-    $RULES_FILE = undef;
-}
+#
+# when all is compiled, do filter all the subs
+#
 
-#################################################################
-#
-#
-#   INIT BLOCK
-#
-#
-#################################################################
+# we need that to avoid 'Too late to run INIT' errors if Hook::Filter is compiled from an eval/require
+no warnings 'void';
 
-# This block executes after import and before running actual program
 INIT {
-
-    # initiate a rule pool and a hooker
-    my $pool = get_rule_pool();
-
-    #----------------------------------------------------------------
-    #
-    #   load rules from rules file, if any
-    #
-
-    if (defined $RULES_FILE && -f $RULES_FILE) {
-
-	# TODO: support runtime monitoring of rules file and update of rules upon changes in file
-
-	open(IN,"$RULES_FILE")
-	    or confess "failed to open Hook::Filter rules file [$RULES_FILE]: $!";
-	while (my $line = <IN>) {
-	    chomp $line;
-	    next if ($line =~ /^\s*\#/);
-	    next if ($line =~ /^\s*$/);
-
-	    my $rule = new Hook::Filter::Rule($line);
-	    $rule->source($RULES_FILE);
-	    $pool->add_rule($rule);
-	}
-	close(IN);
-    }
-
-    #----------------------------------------------------------------
-    #
-    #   wrap all filtered methods with the firewalling hook
-    #
-
-    foreach my $pkg (keys %HOOKED_SUBS) {
-	# if a module uses Hook::Filter without specifying 'hook => ...', the list of hooked
-	# functions should be the same as in the main declaration
-	if (ref \$HOOKED_SUBS{$pkg} eq 'SCALAR') {
-	    if ($HOOKED_SUBS{$pkg} ne 'main') {
-		die "BUG: the only scalar value allowed in HOOK_SUBS is 'main', not [".$HOOKED_SUBS{$pkg}."].";
-	    }
-	    $HOOKED_SUBS{$pkg} = $HOOKED_SUBS{'main'};
-	}
-
-	foreach my $method (@{$HOOKED_SUBS{$pkg}}) {
-	    # if method is already a complete path, use it, hence modifying a method in an other module
-	    if ($method =~ /::/) {
-		filter_sub($method);
-	    } else {
-		filter_sub($pkg."::".$method);
-	    }
-	}
-    }
+    # add a filtering closure around each sub
+    map { filter_sub($_) } keys %HOOK_SUBS;
 }
 
 1;
@@ -331,7 +307,7 @@ C<Hook::Filter> accepts the following import parameters:
 
 =item C<< rules => $rules_file >>
 
-Specify the complete path to a rule file. This import parameter can be used
+Optional. Specify the complete path to a rule file. This import parameter can be used
 only once in a program (usually in package C<< main >>) independently of how many
 times C<< Hook::Filter >> is used. The file is parsed at INIT time.
 
@@ -344,13 +320,9 @@ Example:
 
 =item C<< hook => $subname1 >> or C<< hook => [$subname1,$subname2...] >>
 
-Specify which subroutines to filter. C<$subname> can either be a fully
+Mandatory. Specify which subroutines to filter. C<$subname> can either be a fully
 qualified name or just the name of a subroutine located in the current
 package.
-
-If you C<use Hook::Filter> inside a package without specifying the import
-parameter C<< hook >>, the same subroutines as specified in package C<< main >>
-will be assumed by default.
 
 Examples:
 

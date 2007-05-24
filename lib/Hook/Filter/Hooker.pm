@@ -2,7 +2,7 @@
 #
 #   Hook::Filter::Hooker - Wrap subroutines in a firewalling closure
 #
-#   $Id: Hooker.pm,v 1.5 2007/05/23 08:26:15 erwan_lemonnier Exp $
+#   $Id: Hooker.pm,v 1.8 2007/05/24 14:58:09 erwan_lemonnier Exp $
 #
 #   060302 erwan Created
 #   070516 erwan Use the rule pool
@@ -229,7 +229,7 @@ See Hook::Filter, Hook::Filter::Rule, Hook::Filter::RulePool, Hook::Filter::Plug
 
 =head1 VERSION
 
-$Id: Hooker.pm,v 1.5 2007/05/23 08:26:15 erwan_lemonnier Exp $
+$Id: Hooker.pm,v 1.8 2007/05/24 14:58:09 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

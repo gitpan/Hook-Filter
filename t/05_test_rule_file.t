@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 05_test_rule_file.t,v 1.4 2007/05/16 15:44:21 erwan_lemonnier Exp $
+#   $Id: 05_test_rule_file.t,v 1.5 2007/05/24 14:52:37 erwan_lemonnier Exp $
 #
 #   test using a rule file with Hook::Filter
 #
@@ -16,7 +16,6 @@ package MyTest;
 use strict;
 use warnings;
 use lib "../lib/";
-use Hook::Filter;
 
 sub mylog1 { return 1; };
 sub mylog2 { return 1; };
@@ -29,7 +28,6 @@ package MyTest::Child;
 use strict;
 use warnings;
 use lib "../lib/";
-use Hook::Filter;
 
 sub mylog1 { return 1; };
 sub mylog2 { return 1; };
@@ -76,7 +74,13 @@ BEGIN {
     `echo "subname =~ /mylog3\$/" >> $rule_file`;
     `echo "subname =~ /Child.*[23]\$/" >> $rule_file`;
 
-    use_ok('Hook::Filter','rules',$rule_file,'hook',['mylog1','mylog2','mylog3']);
+    use_ok('Hook::Filter',
+	   'rules',$rule_file,
+	   'hook',[ 'mylog1','mylog2','mylog3',
+		    'MyTest::mylog1','MyTest::mylog2','MyTest::mylog3',
+		    'MyTest::Child::mylog1','MyTest::Child::mylog2','MyTest::Child::mylog3',
+		    ]
+	   );
 }
 
 # now let's test that the rules in $rule_file were indeed parsed

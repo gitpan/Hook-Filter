@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 06_test_log_dispatch.t,v 1.3 2007/05/16 15:44:21 erwan_lemonnier Exp $
+#   $Id: 06_test_log_dispatch.t,v 1.4 2007/05/24 14:52:37 erwan_lemonnier Exp $
 #
 #   test filtering Log::Dispatch with Hook::Filter
 #
@@ -41,14 +41,12 @@ my $rule_file;
 
 # need to run this in an init block that executes before the init block from Hook::Filter,
 # otherwise Hook::Filter won't find Log::Dispatch's symbol table upon creating the hooks
-INIT {
+BEGIN {
     eval "use Module::Pluggable"; plan skip_all => "Module::Pluggable required for testing Hook::Filter" if $@;
     eval "use File::Spec"; plan skip_all => "File::Spec required for testing Hook::Filter" if $@;
     eval "use Log::Dispatch"; plan skip_all => "Log::Dispatch required for testing Log::Dispatch compatibility" if $@;
     eval "use Log::Dispatch::File"; plan skip_all => "Log::Dispatch::File required for testing Log::Dispatch compatibility" if $@;
-}
 
-BEGIN {
     $rule_file = "./tmp_rules_file";
 
     `rm $rule_file` if (-e $rule_file);

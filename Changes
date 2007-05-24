@@ -23,3 +23,7 @@ Revision history for Perl extension Hook::Filter
 
 0.06  2007-05-23
         - POD updates
+
+0.07  2007-05-25
+        - refactored to avoid 'Too late to run INIT' block message when used from eval/require
+        - Hook::Filter now *must* be used with parameter 'hook =>'

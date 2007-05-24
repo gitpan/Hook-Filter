@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 07_test_pool.t,v 1.1 2007/05/16 13:32:23 erwan_lemonnier Exp $
+#   $Id: 07_test_pool.t,v 1.2 2007/05/24 14:52:37 erwan_lemonnier Exp $
 #
 #   test Hook::Filter::RulePool
 #
@@ -16,8 +16,8 @@ BEGIN {
     eval "use File::Spec"; plan skip_all => "File::Spec required for testing Hook::Filter" if $@;
     plan tests => 18;
 
-    use_ok('Hook::Filter::RulePool','get_rule_pool');
     use_ok('Hook::Filter::Rule');
+    use_ok('Hook::Filter::RulePool','get_rule_pool');
 }
 
 # new should be forbidden
