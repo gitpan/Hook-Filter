@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 11_test_arg.t,v 1.1 2007/05/16 15:44:21 erwan_lemonnier Exp $
+#   $Id: 11_test_arg.t,v 1.2 2007/05/25 12:52:01 erwan_lemonnier Exp $
 #
 #   test from()
 #
@@ -14,12 +14,29 @@ use lib "../lib/";
 BEGIN {
     eval "use Module::Pluggable"; plan skip_all => "Module::Pluggable required for testing Hook::Filter" if $@;
     eval "use File::Spec"; plan skip_all => "File::Spec required for testing Hook::Filter" if $@;
-    plan tests => 8;
+    plan tests => 9;
 
     use_ok('Hook::Filter::Hooker','filter_sub');
     use_ok('Hook::Filter::Rule');
     use_ok('Hook::Filter::RulePool','get_rule_pool');
 }
+
+# expect 1 warning
+
+my @warnings = ("invalid Hook::Filter rule .arg.undef..",
+		);
+
+$SIG{__WARN__} = sub {
+    my $msg = shift;
+    my $expect = shift @warnings;
+    ok($msg =~ /$expect/i, "got warning matching [$expect]");
+    return if ($msg =~ /$expect/i);
+    CORE::warn($msg);
+};
+
+#
+# go on with normal tests
+#
 
 my ($rule,$pool);
 $pool = get_rule_pool;

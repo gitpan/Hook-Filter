@@ -2,7 +2,7 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.8 2007/05/24 14:52:37 erwan_lemonnier Exp $
+#   $Id: Filter.pm,v 1.10 2007/05/25 12:41:11 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
@@ -28,7 +28,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 #----------------------------------------------------------------
 #
@@ -131,12 +131,14 @@ sub import {
 # when all is compiled, do filter all the subs
 #
 
-# we need that to avoid 'Too late to run INIT' errors if Hook::Filter is compiled from an eval/require
-no warnings 'void';
+sub _filter_subs {
+    map { filter_sub($_) } keys %HOOK_SUBS;
+}
 
+# this init block won't be executed if Hook::Filter is used from an eval/require
 INIT {
     # add a filtering closure around each sub
-    map { filter_sub($_) } keys %HOOK_SUBS;
+    _filter_subs;
 }
 
 1;
@@ -299,9 +301,8 @@ C<Hook::Filter::Plugins::Library> for details on how to do that.
 
 =head1 INTERFACE
 
-C<Hook::Filter> exports no functions.
-
-C<Hook::Filter> accepts the following import parameters:
+C<Hook::Filter> exports no  functions, but C<Hook::Filter> accepts the following
+import parameters:
 
 =over 4
 
@@ -387,6 +388,29 @@ The concept of blocking/allowing subroutine calls dynamically is somewhat
 unusual and fun. Don't let yourself get too excited though. Doing that kind of
 dynamic stuff makes your code harder to understand for non-dynamic developers,
 hence reducing code stability.
+
+=head2 USING Hook::Filter VIA REQUIRE/EVAL
+
+If you do something like:
+
+    eval "use Hook::Filter hook => 'some_sub'";
+
+You will get a 'Too late to run INIT block' warning, and the subroutine
+C<some_sub> will not be filtered.
+
+There is unfortunately no simple way to fix that.
+
+A rather ugly work-around would be to run explicitly the private
+function C<_filter_subs> from C<Hook::Filter>:
+
+    {
+        no warnings 'void';
+        eval "use Hook::Filter hook => 'some_sub', qw(filter_subs)";
+    }
+    ...
+
+    # later on, call filter_subs explicitly
+    Hook::Filter::_filter_subs;
 
 =head1 USE CASE
 

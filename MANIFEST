@@ -21,5 +21,6 @@ t/09_test_default_behavior.t
 t/10_test_subname.t
 t/11_test_arg.t
 t/13_test_from.t
+t/20_test_eval.t
 t/pod-coverage.t
 t/pod.t
