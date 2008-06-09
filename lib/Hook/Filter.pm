@@ -2,7 +2,7 @@
 #
 #   Hook::Filter - A runtime filtering layer on top of subroutine calls
 #
-#   $Id: Filter.pm,v 1.10 2007/05/25 12:41:11 erwan_lemonnier Exp $
+#   $Id: Filter.pm,v 1.11 2008/06/09 21:04:38 erwan_lemonnier Exp $
 #
 #   051105 erwan Created
 #   060301 erwan Recreated
@@ -28,7 +28,7 @@ use Data::Dumper;
 
 our @EXPORT = qw();
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 #----------------------------------------------------------------
 #
@@ -457,15 +457,7 @@ Jerker Montelius for their suggestions and support!
 
 =head1 LICENSE
 
-This code was developed partly during free-time
-and partly at the Swedish Premium Pension Authority as part of
-the Authority's software development activities. This code is distributed
-under the same terms as Perl itself. We encourage you to help us improving
-this code by sending feedback and bug reports to the author(s).
-
-This code comes with no warranty. The Swedish Premium Pension Authority and the author(s)
-decline any responsibility regarding the possible use of this code or any consequence
-of its use.
+See the LICENSE file included in this distribution.
 
 =cut
 

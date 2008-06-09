@@ -2,11 +2,12 @@
 #
 #   Hook::Filter::Rule - A filter rule
 #
-#   $Id: Rule.pm,v 1.6 2007/05/24 14:52:37 erwan_lemonnier Exp $
+#   $Id: Rule.pm,v 1.7 2008/06/09 21:04:08 erwan_lemonnier Exp $
 #
 #   060301 erwan Created
 #   070516 erwan Small POD and layout fixes
 #   070524 erwan Used BEGIN instead of INIT
+#   080609 erwan Updated POD
 #
 
 package Hook::Filter::Rule;
@@ -19,7 +20,7 @@ use Data::Dumper;
 use Symbol;
 use Module::Pluggable search_path => ['Hook::Filter::Plugins'], require => 1;
 
-our $VERSION='0.03';
+our $VERSION='0.04';
 
 #----------------------------------------------------------------
 #
@@ -168,6 +169,18 @@ Return the rule's string (C<$rule> in C<< new() >>).
 
 =back
 
+The following functions are exported by the default plugin library Hook::Filter::Plugin::Library:
+
+=over 4
+
+=item C<< subname >>
+
+=item C<< arg >>
+
+=item C<< from >>
+
+=back
+
 =head1 DIAGNOSTICS
 
 =over 4
@@ -193,7 +206,7 @@ See Hook::Filter, Hook::Filter::RulePool, Hook::Filter::Hooker, Hook::Filter::Pl
 
 =head1 VERSION
 
-$Id: Rule.pm,v 1.6 2007/05/24 14:52:37 erwan_lemonnier Exp $
+$Id: Rule.pm,v 1.7 2008/06/09 21:04:08 erwan_lemonnier Exp $
 
 =head1 AUTHOR
 

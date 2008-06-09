@@ -5,9 +5,9 @@ lib/Hook/Filter/Hooker.pm
 lib/Hook/Filter/Plugins/Library.pm
 lib/Hook/Filter/Rule.pm
 lib/Hook/Filter/RulePool.pm
+LICENSE
 Makefile.PL
-MANIFEST
-META.yml
+MANIFEST			This list of files
 README
 t/01_test_compile.t
 t/02_test_import_params.t
@@ -24,3 +24,4 @@ t/13_test_from.t
 t/20_test_eval.t
 t/pod-coverage.t
 t/pod.t
+META.yml                                 Module meta-data (added by MakeMaker)

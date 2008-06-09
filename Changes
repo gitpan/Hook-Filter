@@ -31,3 +31,7 @@ Revision history for Perl extension Hook::Filter
 0.08  2007-05-25
         - better workaround for skipped INIT block when evaled/required
         - handle warnings in tests
+
+0.09  2008-06-09
+        - kvalite++
+        - fix test
