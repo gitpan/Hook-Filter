@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Hook-Filter
-version:             0.09
+version:             0.10
 abstract:            A runtime firewall for subroutine calls
 license:             ~
 author:              

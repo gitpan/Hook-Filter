@@ -35,3 +35,6 @@ Revision history for Perl extension Hook::Filter
 0.09  2008-06-09
         - kvalite++
         - fix test
+
+0.10  2008-08-26
+        - resolved RT 36912, a test error

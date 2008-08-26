@@ -1,6 +1,6 @@
 #################################################################
 #
-#   $Id: 06_test_log_dispatch.t,v 1.4 2007/05/24 14:52:37 erwan_lemonnier Exp $
+#   $Id: 06_test_log_dispatch.t,v 1.5 2008/08/26 08:11:23 erwan_lemonnier Exp $
 #
 #   test filtering Log::Dispatch with Hook::Filter
 #
@@ -53,11 +53,11 @@ BEGIN {
     `touch $rule_file`;
     `echo "from !~ /^MyTest1/" >> $rule_file`;
 
+    # ok, Log::Dispatch is available
+    plan tests => 6;
+
     use_ok('Hook::Filter', hook => ['Log::Dispatch::log','Log::Dispatch::log_to'], rules => $rule_file);
 }
-
-# ok, Log::Dispatch is available
-plan tests => 5;
 
 my $dispatcher = Log::Dispatch->new;
 $dispatcher->add(Log::Dispatch::File->new(name => 'file',
